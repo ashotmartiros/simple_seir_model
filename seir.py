@@ -1,7 +1,7 @@
 import argparse
 import matplotlib.pyplot as plt
 
-NUMBER_OF_STEPS = 10 
+NUMBER_OF_STEPS = 1
 def parse_arguments():
     parser = argparse.ArgumentParser()
 
@@ -23,7 +23,9 @@ class SEIR:
                      , beta
                      , gamma
                      , sigma
-                     , day):
+                     , day
+                     , bp_day
+                     , bp_beta):
         self.day_ = day
         self.susceptubles_ = [susceptuble] + [0] * self.day_ * NUMBER_OF_STEPS 
         self.exposeds_ = [exposed] + [0] * self.day_ * NUMBER_OF_STEPS 
@@ -32,31 +34,33 @@ class SEIR:
         self.beta_ = beta 
         self.gamma_ = gamma
         self.sigma_ = sigma
+        self.bp_day_ = bp_day
+        self.bp_beta_ = bp_beta
         self.N_ = susceptuble + exposed + infected + recovered
 
-    def update_(self, i, h):
+    def update_(self, beta, i, h):
         s_i = self.susceptubles_[i]
         e_i = self.exposeds_[i]
         i_i = self.infecteds_[i]
         r_i = self.recovereds_[i]
 
-        k1 = -(self.beta_/self.N_) * s_i * i_i
-        n1 = (self.beta_/self.N_) * s_i * i_i - self.sigma_ * e_i
+        k1 = -(beta/self.N_) * s_i * i_i
+        n1 = (beta/self.N_) * s_i * i_i - self.sigma_ * e_i
         l1 = self.sigma_ * e_i - self.gamma_ * i_i
         m1 = self.gamma_ * i_i 
 
-        k2 = -(self.beta_/self.N_) * (i_i + n1 * (h / 2)) * (s_i + k1 * (h / 2))
-        n2 = (self.beta_/self.N_) * (i_i + n1 * (h / 2)) * (s_i + k1 * (h / 2)) - self.sigma_ * (e_i + n1 * (h / 2))
+        k2 = -(beta/self.N_) * (i_i + n1 * (h / 2)) * (s_i + k1 * (h / 2))
+        n2 = (beta/self.N_) * (i_i + n1 * (h / 2)) * (s_i + k1 * (h / 2)) - self.sigma_ * (e_i + n1 * (h / 2))
         l2 = self.sigma_ * (e_i + n1 * (h / 2))- self.gamma_ * (i_i + l1 * (h / 2))
         m2 = self.gamma_ * (i_i + l1 * (h / 2)) 
 
-        k3 = -(self.beta_/self.N_) * (i_i + n2 * (h / 2)) * (s_i + k2 * (h / 2))
-        n3 = (self.beta_/self.N_) * (i_i + n2 * (h / 2)) * (s_i + k2 * (h / 2)) - self.sigma_ * (e_i + n2 * (h / 2))
+        k3 = -(beta/self.N_) * (i_i + n2 * (h / 2)) * (s_i + k2 * (h / 2))
+        n3 = (beta/self.N_) * (i_i + n2 * (h / 2)) * (s_i + k2 * (h / 2)) - self.sigma_ * (e_i + n2 * (h / 2))
         l3 = self.sigma_ * (e_i + n2 * (h / 2))- self.gamma_ * (i_i + l2 * (h / 2))
         m3 = self.gamma_ * (i_i + l2 * (h / 2)) 
 
-        k4 = -(self.beta_/self.N_) * (i_i + n3 * h) * (s_i + k3 * h)
-        n4 = (self.beta_/self.N_) * (i_i + n3 * h) * (s_i + k3 * h) - self.sigma_ * (e_i + n3 * h)
+        k4 = -(beta/self.N_) * (i_i + n3 * h) * (s_i + k3 * h)
+        n4 = (beta/self.N_) * (i_i + n3 * h) * (s_i + k3 * h) - self.sigma_ * (e_i + n3 * h)
         l4 = self.sigma_ * (e_i + n3 * h)- self.gamma_ * (i_i + l3 * h)
         m4 = self.gamma_ * (i_i + l3 * h) 
 
@@ -70,16 +74,19 @@ class SEIR:
         idx = 0
         ts = 0
         self.time_stamp_ = [ts]
-        for day in range(self.day_):
+        betas = self.bp_day_ * [self.bp_beta_] + (self.day_ - self.bp_day_) * [self.beta_]
+        for beta in betas:
             for step in range(NUMBER_OF_STEPS):
-                self.update_(idx, h)
+                self.update_(beta, idx, h)
                 idx += 1
                 ts += h
                 self.time_stamp_.append(ts)
         #print("Susceptubles: ", self.susceptubles_)
-        #print("Exposeds: ", len(self.exposeds_))
-        #print("Infencteds: ", len(self.infecteds_))
-        #print("Recovereds: ", len(self.recovereds_))
+        #print("Exposeds: ", self.exposeds_)
+        #print("Infencteds: ", self.infecteds_)
+        #print("Recovereds: ", self.recovereds_)
+        #print("Day ", self.time_stamp_)
+        return self.infecteds_.index(max(self.infecteds_)), max(self.infecteds_)
 
     def draw(self, path=''):
         plt.plot(self.time_stamp_, self.susceptubles_, label = 'susceptubles')
@@ -92,6 +99,8 @@ class SEIR:
         plt.legend()
         if not path:
             plt.show()
+        if self.bp_day_ > 0: 
+            plt.axvline(x=self.bp_day_)
         plt.savefig(path)
         plt.clf()
 

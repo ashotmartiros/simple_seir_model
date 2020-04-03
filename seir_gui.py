@@ -18,7 +18,7 @@ class Window(QMainWindow):
         self.top = 200
         self.left = 200
         self.width = 1000
-        self.height = 560
+        self.height = 600
         self.plots_saving_dir = plots_saving_dir 
         self.init_window()
 
@@ -108,13 +108,51 @@ class Window(QMainWindow):
         self.day_title.setGeometry(750, 400, 90, 30)
         self.day_title.setText("Day")
 
+        self.bp_field = QLineEdit(self)
+        self.bp_field.setValidator(QIntValidator())
+        self.bp_field.setMaxLength(4)
+        self.bp_field.setFont(QFont("Arial",20))
+        self.bp_field.move(850, 440)
+        self.bp_field.setText('0')
+        self.bp_title = QLabel(self)
+        self.bp_title.setGeometry(750, 440, 90, 30)
+        self.bp_title.setText("Break Point")
+
+        self.bp_betta_field = QLineEdit(self)
+        self.bp_betta_field.setValidator(QDoubleValidator(0.99,99.99,2))
+        self.bp_betta_field.setMaxLength(4)
+        self.bp_betta_field.setFont(QFont("Arial",20))
+        self.bp_betta_field.move(850, 480)
+        self.bp_betta_field.setText('0')
+        self.bp_betta_title = QLabel(self)
+        self.bp_betta_title.setGeometry(750, 480, 90, 30)
+        self.bp_betta_title.setText("BP betta")
+
         self.plot_btn = QPushButton('Plot', self)
-        self.plot_btn.move(800, 460)
+        self.plot_btn.move(800, 520)
         self.plot_btn.resize(100, 40)
         self.plot_btn.clicked.connect(self.plot)
 
         self.plot_label = QLabel(self)
         self.plot_label.setGeometry(20, 20, 640, 480)
+
+        self.peak_day_title = QLabel(self)
+        self.peak_day_title.setGeometry(20, 520, 140, 30)
+        self.peak_day_title.setText("Peak Day:")
+        self.peak_day_val = QLabel(self)
+        self.peak_day_val.setGeometry(150, 520, 120, 30)
+        self.peak_day_val.setText("")
+        self.peak_day_title.setStyleSheet("font: 30pt")
+        self.peak_day_val.setStyleSheet("font: 30pt")
+
+        self.peak_inf_title = QLabel(self)
+        self.peak_inf_title.setGeometry(220, 520, 200, 30)
+        self.peak_inf_title.setText("Peak Infecteds:")
+        self.peak_inf_val = QLabel(self)
+        self.peak_inf_val.setGeometry(420, 520, 250, 30)
+        self.peak_inf_val.setText("")
+        self.peak_inf_title.setStyleSheet("font: 30pt")
+        self.peak_inf_val.setStyleSheet("font: 30pt")
         self.show()
 
     def plot(self):
@@ -125,11 +163,15 @@ class Window(QMainWindow):
                          ,float(self.beta_field.text())
                          ,float(self.gamma_field.text())
                          ,float(self.sigma_field.text())
-                         ,int(self.day_field.text()))
-        seir_model.solve()
+                         ,int(self.day_field.text())
+                         ,int(self.bp_field.text())
+                         ,float(self.bp_betta_field.text()))
+        peak_day, peak_inf = seir_model.solve()
         self.plot_saving_path = os.path.join(self.plots_saving_dir, self.random_string() + '.png')
         seir_model.draw(self.plot_saving_path)
         self.plot_label.setPixmap(QPixmap(self.plot_saving_path))
+        self.peak_day_val.setText(str(peak_day))
+        self.peak_inf_val.setText(str(int(peak_inf)))
 
     @staticmethod
     def random_string(length=10):
